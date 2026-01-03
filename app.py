@@ -12,39 +12,19 @@ st.set_page_config(page_title="AI Vocal Coach Pro", page_icon="🎙️", layout=
 
 st.markdown("""
     <style>
-    /* Deep Space Background */
     .stApp {
         background: radial-gradient(circle at center, #1a1a3a 0%, #050510 100%);
         color: #ffffff;
     }
-    
-    /* Metrics: High Contrast White Numbers */
-    [data-testid="stMetricValue"] {
-        color: #ffffff !important;
-        font-size: 55px !important;
-        font-weight: 900 !important;
-        text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
-    }
-    
-    /* Metric Labels: Cyan Glow */
-    [data-testid="stMetricLabel"] {
-        color: #00f2fe !important;
-        font-size: 18px !important;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-    }
-
-    /* Glass Cards: No more faded look */
+    [data-testid="stMetricValue"] { color: #ffffff !important; font-size: 55px !important; font-weight: 900 !important; }
+    [data-testid="stMetricLabel"] { color: #00f2fe !important; font-size: 18px !important; }
     div[data-testid="stMetric"] {
         background: rgba(255, 255, 255, 0.1) !important;
         backdrop-filter: blur(20px) !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
         border-radius: 20px !important;
         padding: 30px !important;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
     }
-
-    /* Professional Start Session Button */
     .stButton>button {
         width: 100% !important;
         background: linear-gradient(90deg, #7000ff, #00f2fe) !important;
@@ -52,23 +32,11 @@ st.markdown("""
         border-radius: 50px !important;
         padding: 20px !important;
         font-size: 22px !important;
-        font-weight: bold !important;
         border: none !important;
-        box-shadow: 0 0 20px rgba(112, 0, 255, 0.4) !important;
-    }
-
-    /* Transcription Box */
-    .stInfo {
-        background: rgba(0, 242, 254, 0.1) !important;
-        border: 1px solid #00f2fe !important;
-        color: #ffffff !important;
-        font-size: 18px !important;
-        border-radius: 15px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# AI Model
 @st.cache_resource
 def load_model():
     return whisper.load_model("base")
@@ -76,52 +44,68 @@ def load_model():
 model = load_model()
 
 # --- APP UI ---
-st.title("🎙️ Make It Awesome")
-st.write("<p style='text-align: center; font-size: 20px; opacity: 0.9;'>Master Your Voice with AI Coach Pro</p>", unsafe_allow_html=True)
+st.title("🎙️ AI Vocal Coach Pro")
+st.write("<p style='text-align: center; font-size: 20px; opacity: 0.9;'>Master Your Voice with Specific Goals</p>", unsafe_allow_html=True)
 
 # Settings Row
 st.write("##")
-c1, c2 = st.columns(2)
+c1, c2, c3 = st.columns(3)
+
 with c1:
     duration = st.select_slider("Session Length (sec)", options=[5, 10, 15], value=5)
 with c2:
     language = st.selectbox("Language Mode", ["English", "Hindi"])
+with c3:
+    # --- NAYA OPTION: PREPARATION GOAL ---
+    goal = st.selectbox("What are you preparing for?", 
+                        ["Public Speaking", "Anchoring", "Motivational Speaking", "Teaching", "Interview", "Storytelling"])
 
 st.write("##")
-if st.button("✨ START YOUR SESSION"):
+if st.button(f"✨ START {goal.upper()} SESSION"):
     fs = 44100
-    with st.spinner("✨ Listening... Boliye!"):
+    with st.spinner(f"🎤 Recording for {goal}... Boliye!"):
         recording = sd.rec(int(duration * fs), samplerate=fs, channels=1)
         sd.wait()
         write('speech.wav', fs, recording)
     
     st.audio('speech.wav')
 
-    # Analysis Brain
+    # Analysis
     result = model.transcribe("speech.wav", language=("en" if language=="English" else "hi"))
     text = result['text']
     y, sr = librosa.load("speech.wav")
     
     words = text.split()
     wpm = int(len(words) / (duration / 60))
-    score = max(10, 100 - (text.lower().count("um") * 15))
-
-    # --- PERFORMANCE SECTION ---
-    st.markdown("---")
-    st.subheader("📊 Live Analysis Report")
     
-    # Waveform (Purple Glow)
-    fig, ax = plt.subplots(figsize=(12, 3))
-    librosa.display.waveshow(y, sr=sr, ax=ax, color='#7000ff', alpha=0.9)
+    # Custom Logic Based on Goal
+    score = 100
+    if goal == "Teaching" and wpm > 150: score -= 20 # Teaching should be slow
+    if goal == "Anchoring" and wpm < 130: score -= 15 # Anchoring needs energy/speed
+    score = max(10, score - (text.lower().count("um") * 10))
+
+    # --- REPORT ---
+    st.markdown(f"### 📊 Analysis for: {goal}")
+    
+    fig, ax = plt.subplots(figsize=(12, 2))
+    librosa.display.waveshow(y, sr=sr, ax=ax, color='#7000ff')
     ax.set_axis_off()
     fig.patch.set_facecolor('#050510')
     st.pyplot(fig)
 
-    # Metrics
     m1, m2, m3 = st.columns(3)
-    m1.metric("Confidence", f"{score}%")
-    m2.metric("Speed (WPM)", wpm)
-    m3.metric("Lang Mode", language)
+    m1.metric("Goal Match Score", f"{score}%")
+    m2.metric("Speech Rate", f"{wpm} WPM")
+    m3.metric("Goal Type", goal)
 
-    st.write("##")
-    st.info(f"**AI Transcription:** {text}")
+    st.info(f"**Transcription:** {text}")
+
+    # --- CUSTOM FEEDBACK BASED ON GOAL ---
+    st.subheader("💡 Personalized Advice")
+    if goal == "Public Speaking":
+        st.write("👉 Focus on eye contact and hand gestures. Your speed is good!")
+    elif goal == "Teaching":
+        if wpm > 140: st.warning("👉 Aap thoda tez bol rahe hain. Students ko samajhne ke liye thoda slow bolein.")
+        else: st.success("👉 Perfect pace for teaching!")
+    elif goal == "Anchoring":
+        st.write("👉 Energy high rakhein aur words par emphasis dein.")
