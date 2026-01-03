@@ -44,12 +44,16 @@ model = load_model()
 st.title("🎙️ AI Vocal Coach Pro")
 st.write("### *Smart Feedback for English & Hindi Speakers*")
 
-# Settings Area
+# --- SETTINGS SECTION (Yahan add kiya hai) ---
+st.markdown("### ⚙️ Recording Settings")
 col_set1, col_set2 = st.columns(2)
+
 with col_set1:
     duration = st.slider("Recording Time (seconds)", 3, 15, 5)
+
 with col_set2:
-    language_choice = st.selectbox("Apni Language Chuniye", ["English", "Hindi"])
+    # --- YEH HAI AAPKA LANGUAGE SELECTION CODE ---
+    language_choice = st.selectbox("Apni Language Chuniye / Select Language", ["English", "Hindi"])
     lang_code = "en" if language_choice == "English" else "hi"
 
 st.markdown("---")
@@ -67,24 +71,25 @@ if st.button("🔴 START RECORDING"):
 
     # AI PROCESSING
     with st.spinner("AI Analysis in progress..."):
-        # 1. Transcription (Based on selected language)
+        # --- TRANSCRIBE MEIN LANG_CODE USE KIYA HAI ---
         result = model.transcribe("speech.wav", language=lang_code)
         text = result['text']
         
-        # 2. Audio Waveform Data
+        # Audio Analysis
         y, sr = librosa.load("speech.wav")
         
-        # 3. Calculations
+        # Calculations
         words = text.split()
         wpm = int(len(words) / (duration / 60))
-        fillers = ["um", "uh", "ah", "like", "hmm", "actually", "matlab", "toh"]
+        # Hindi fillers bhi add kar diye hain
+        fillers = ["um", "uh", "ah", "like", "hmm", "actually", "matlab", "toh", "ummm"]
         filler_count = sum(1 for word in words if word.lower().strip(",.") in fillers)
         score = max(10, 100 - (filler_count * 15))
 
     # --- RESULTS ---
     st.markdown("## 📊 Performance Analytics")
     
-    # 1. Visual Waveform
+    # Visual Waveform
     
     fig, ax = plt.subplots(figsize=(10, 2))
     librosa.display.waveshow(y, sr=sr, ax=ax, color='#00f2fe')
@@ -92,18 +97,18 @@ if st.button("🔴 START RECORDING"):
     fig.patch.set_facecolor('#0e1117')
     st.pyplot(fig)
 
-    # 2. Metrics
+    # Metrics
     c1, c2, c3 = st.columns(3)
     c1.metric("Confidence Score", f"{score}%")
     c2.metric("Filler Words", filler_count)
     c3.metric("Speech Pace", f"{wpm} WPM")
 
     with st.expander("📝 View Transcription"):
-        st.write(f"**Recognized Text:** {text}")
+        st.write(f"**Recognized Text ({language_choice}):** {text}")
 
-    # 3. Coaching Tips
+    # Coaching Tips
     st.subheader("💡 Coaching Insights")
     if score > 80:
         st.success("🌟 Great Job! Your flow is very professional.")
     else:
-        st.warning("⚡ Tip: Try to avoid filler words (um, uh, matlab).")
+        st.warning(f"⚡ Tip: Aapne {filler_count} fillers use kiye. Try to avoid words like '{', '.join(fillers[:5])}'.")
