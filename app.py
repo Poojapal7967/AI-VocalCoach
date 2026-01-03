@@ -17,14 +17,14 @@ st.markdown("""
         color: white;
     }
     
-    /* Metrics Styling - Numbers ko White aur bada karne ke liye */
+    /* Metrics Styling - Pure White Numbers */
     [data-testid="stMetricValue"] {
         color: #ffffff !important;
         font-size: 50px !important;
         font-weight: bold !important;
     }
     
-    /* Metric Labels (Confidence, Pace etc.) */
+    /* Metric Labels */
     [data-testid="stMetricLabel"] {
         color: #00f2fe !important;
         font-size: 20px !important;
@@ -39,19 +39,17 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
     }
 
-    /* Button Styling */
+    /* HUGE RED BUTTON STYLING */
     .stButton>button {
-        background: linear-gradient(45deg, #00f2fe, #4facfe) !important;
+        background: linear-gradient(45deg, #ff4b4b, #ff7575) !important;
         color: white !important;
-        border-radius: 10px !important;
-        padding: 12px !important;
-        font-size: 18px !important;
-    }
-
-    /* Transcription Expanders */
-    .stExpander {
-        background: #1e2130 !important;
-        border-radius: 10px !important;
+        border-radius: 50px !important;
+        padding: 20px !important;
+        font-size: 24px !important;
+        font-weight: bold !important;
+        width: 100% !important;
+        margin-top: 20px !important;
+        border: none !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -68,61 +66,59 @@ st.title("🎙️ AI Vocal Coach Pro")
 st.write("### Analyze your confidence, tone, and speaking speed.")
 st.markdown("---")
 
-col_main, col_sidebar = st.columns([2, 1])
+# Recording Duration Settings
+duration = st.slider("Set Recording Time (seconds)", 3, 15, 5)
 
-with col_sidebar:
-    st.write("### ⚙️ Settings")
-    duration = st.slider("Recording Duration (sec)", 3, 15, 5)
-    st.info("Tip: Higher duration gives better AI insights.")
+# --- MAIN START BUTTON ---
+# Isse humne columns se bahar rakha hai taaki ye hamesha dikhe
+if st.button("🔴 START RECORDING & ANALYSIS"):
+    fs = 44100
+    with st.spinner("✨ Recording... Speak Now!"):
+        recording = sd.rec(int(duration * fs), samplerate=fs, channels=1)
+        sd.wait()
+        write('speech.wav', fs, recording)
+    
+    st.success("✅ Voice Captured! Analyzing...")
+    st.audio('speech.wav')
 
-with col_main:
-    if st.button("🔴 Start Live Analysis"):
-        fs = 44100
-        with st.spinner("✨ Recording..."):
-            recording = sd.rec(int(duration * fs), samplerate=fs, channels=1)
-            sd.wait()
-            write('speech.wav', fs, recording)
+    # AI PROCESSING
+    with st.spinner("AI is evaluating your performance..."):
+        # 1. Transcription
+        result = model.transcribe("speech.wav")
+        text = result['text']
         
-        st.success("✅ Voice Captured!")
-        st.audio('speech.wav')
-
-        # AI PROCESSING
-        with st.spinner("AI is evaluating your performance..."):
-            result = model.transcribe("speech.wav")
-            text = result['text']
-            
-            y, sr = librosa.load("speech.wav")
-            pitches, _ = librosa.piptrack(y=y, sr=sr)
-            avg_pitch = np.mean(pitches[pitches > 0]) if np.any(pitches > 0) else 0
-            
-            words = text.split()
-            wpm = int(len(words) / (duration / 60))
-            fillers = ["um", "uh", "ah", "like", "hmm", "actually"]
-            filler_count = sum(1 for word in words if word.lower().strip(",.") in fillers)
-            
-            # Score logic
-            score = max(10, 100 - (filler_count * 15))
-
-        # --- FINAL RESULTS DISPLAY ---
-        st.markdown("## 📊 Performance Analytics")
+        # 2. Audio Analysis
+        y, sr = librosa.load("speech.wav")
+        pitches, _ = librosa.piptrack(y=y, sr=sr)
+        avg_pitch = np.mean(pitches[pitches > 0]) if np.any(pitches > 0) else 0
         
-        # Ye columns boxes ko bada dikhayenge
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Confidence Score", f"{score}%")
-        c2.metric("Filler Words", filler_count)
-        c3.metric("Speech Pace", f"{wpm} WPM")
+        # 3. Calculation Logic
+        words = text.split()
+        wpm = int(len(words) / (duration / 60))
+        fillers = ["um", "uh", "ah", "like", "hmm"]
+        filler_count = sum(1 for word in words if word.lower().strip(",.") in fillers)
+        
+        score = max(10, 100 - (filler_count * 15))
 
-        with st.expander("📝 View Transcription"):
-            st.write(f"**You said:** *\"{text}\"*")
+    # --- FINAL RESULTS DISPLAY ---
+    st.markdown("## 📊 Performance Analytics")
+    
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Confidence Score", f"{score}%")
+    c2.metric("Filler Words", filler_count)
+    c3.metric("Speech Pace", f"{wpm} WPM")
 
-        # --- STYLISH TIPS ---
-        st.subheader("💡 AI Coaching Insights")
-        if score > 80:
-            st.success("🌟 Excellent! Your delivery is sharp and authoritative.")
-        else:
-            st.warning("⚡ Try to reduce filler words like 'um' and 'uh'.")
-            
-        if wpm < 110:
-            st.info("🐢 You are speaking a bit slowly. Increase your pace.")
-        elif wpm > 170:
-            st.info("🚀 Speaking too fast! Take small pauses.")
+    with st.expander("📝 View Transcription"):
+        st.write(f"**You said:** *\"{text}\"*")
+
+    # --- TIPS ---
+    st.subheader("💡 AI Coaching Insights")
+    if score > 80:
+        st.success("🌟 Excellent! Your delivery is sharp.")
+    else:
+        st.warning("⚡ Try to reduce filler words.")
+        
+    if wpm < 110:
+        st.info("🐢 You are speaking a bit slowly.")
+    elif wpm > 170:
+        st.info("🚀 Speaking too fast!")
