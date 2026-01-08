@@ -1,129 +1,121 @@
 import streamlit as st
-import os
-import time
 
-# --- 1. PRECISE UI STYLING (Same as Reference Image) ---
+# --- 1. PRECISE UI STYLING (Pixel Perfect Match) ---
 st.set_page_config(page_title="AI Vocal Coach Pro", layout="wide")
 
 st.markdown("""
     <style>
-    /* Main Dark Theme */
-    .stApp { background: #1a1c1e; color: #ffffff; }
+    /* Background & Global Font */
+    .stApp { background: #1a1c1e; color: #ffffff; font-family: 'Inter', sans-serif; }
     
-    /* Performance Report Glass Box */
-    .performance-container {
-        background: #232629;
-        border-radius: 15px;
-        padding: 25px;
-        border: 1px solid #363a3f;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        margin-top: 20px;
+    /* Top Recording Time Bar (image_30f755.jpg) */
+    .recording-bar {
+        background: #232629; border: 1px solid #363a3f;
+        border-radius: 12px; padding: 10px 20px; margin-bottom: 25px;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .waveform-line { flex-grow: 1; height: 3px; background: #ff4b4b; margin: 0 20px; position: relative; }
+    .waveform-dot { 
+        width: 14px; height: 14px; background: #ff4b4b; border-radius: 50%; 
+        position: absolute; right: 0; top: -5px; box-shadow: 0 0 12px #ff4b4b; 
     }
 
-    /* Top Audio Bar Style */
-    .audio-player-mock {
-        background: #232629;
-        border-radius: 10px;
-        padding: 10px;
-        display: flex;
-        align-items: center;
-        border: 1px solid #363a3f;
-        margin-bottom: 20px;
+    /* Main Performance Report Container (image_310d08.jpg) */
+    .report-main {
+        background: #232629; border: 1px solid #363a3f;
+        border-radius: 20px; padding: 30px; margin-top: 10px;
     }
 
-    /* Metric Cards within the Report */
-    .report-card {
-        background: #2a2d32;
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        border: 1px solid #3c4148;
-        height: 100%;
+    /* Metric Grid - Three Equal Cards */
+    .metrics-container {
+        display: flex; justify-content: space-between; gap: 20px; margin-bottom: 30px;
     }
 
-    /* Start Recording Neon Button (The Red Glow) */
+    .m-card {
+        background: #2a2d32; border: 1px solid #3c4148;
+        border-radius: 15px; padding: 25px; text-align: center; flex: 1;
+        min-height: 180px; display: flex; flex-direction: column; justify-content: center;
+    }
+
+    /* Big Numeric Values */
+    .value-text { font-size: 58px; font-weight: 700; color: #ffffff; line-height: 1; margin-bottom: 8px; }
+    .label-text { font-size: 14px; color: #8e949a; }
+
+    /* START RECORDING NEON BUTTON (The Red Glow) */
     div.stButton > button {
-        background: transparent !important;
-        color: #ffffff !important;
-        border: 2px solid #ff4b4b !important;
-        border-radius: 20px !important;
-        padding: 10px 20px !important;
-        font-weight: bold !important;
-        box-shadow: 0px 0px 10px rgba(255, 75, 75, 0.4);
-        width: 100%;
-        margin-top: 10px;
+        background: transparent !important; color: #ffffff !important;
+        border: 2px solid #ff4b4b !important; border-radius: 30px !important;
+        padding: 12px 25px !important; font-weight: 600 !important;
+        box-shadow: 0px 0px 18px rgba(255, 75, 75, 0.45); 
+        width: 100% !important; margin-top: 15px;
     }
 
-    /* Coaching Tips Section Styling */
-    .tips-box {
-        background: rgba(0, 242, 254, 0.05);
-        border: 1px solid rgba(0, 242, 254, 0.2);
-        padding: 15px;
-        border-radius: 8px;
-        margin-top: 15px;
+    /* Speech.wav Inner Box */
+    .inner-wav-box {
+        background: #1a1c1e; border: 1px solid #333;
+        border-radius: 12px; padding: 15px; display: flex; align-items: center; justify-content: center;
     }
-    
-    .tip-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 14px; }
-    .star-icon { margin-right: 10px; font-size: 18px; }
-    
-    /* Metrics Typography */
-    .metric-value { font-size: 48px; font-weight: 700; color: #ffffff; line-height: 1; }
-    .metric-label { font-size: 14px; color: #8e949a; margin-top: 5px; }
+
+    /* COACHING TIPS (image_310d08.jpg) */
+    .coaching-section { margin-top: 30px; }
+    .tips-header-box { 
+        background: #2a2d32; border-radius: 10px; padding: 12px 20px; 
+        border-bottom: 2px solid #00f2fe; margin-bottom: 20px;
+        display: flex; align-items: center;
+    }
+    .tip-line { margin-bottom: 12px; display: flex; align-items: center; font-size: 15px; }
+    .star { font-size: 20px; margin-right: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. LAYOUT CONSTRUCTION ---
-
-# Top Audio Bar Mockup (Image reference: image_30f755.jpg)
+# --- 2. RECORDING TIME BAR ---
 st.caption("Recording Time (seconds)")
 st.markdown("""
-    <div class="audio-player-mock">
-        <span style="margin-right:15px;">▶ 0:00 / 0:05</span>
-        <div style="flex-grow:1; height:2px; background:#ff4b4b; position:relative;">
-            <div style="width:10px; height:10px; background:#ff4b4b; border-radius:50%; position:absolute; right:0; top:-4px; box-shadow:0 0 10px #ff4b4b;"></div>
-        </div>
+    <div class="recording-bar">
+        <span>▶ 0:00 / 0:05</span>
+        <div class="waveform-line"><div class="waveform-dot"></div></div>
+        <span>🔊 ⋮</span>
     </div>
 """, unsafe_allow_html=True)
 
-# Main Performance Report Section (Image reference: image_302c23.jpg)
-st.markdown('<div class="performance-container">', unsafe_allow_html=True)
-st.markdown('<p style="font-weight:600; font-size:18px; margin-bottom:15px;">📊 Performance Report</p>', unsafe_allow_html=True)
+# --- 3. PERFORMANCE REPORT SECTION (Exact Image Match) ---
+st.markdown('<div class="report-main">', unsafe_allow_html=True)
+st.markdown('<p style="font-size:18px; font-weight:600; margin-bottom:25px;">☗ Performance Report</p>', unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns(3)
+# Three Metric Columns
+c1, c2, c3 = st.columns(3)
 
-with col1:
-    st.markdown('<div class="report-card">', unsafe_allow_html=True)
-    st.markdown('<div class="metric-value">19</div>', unsafe_allow_html=True)
-    st.markdown('<div class="metric-label">Confidence Score</div>', unsafe_allow_html=True)
+with c1:
+    st.markdown('<div class="m-card">', unsafe_allow_html=True)
+    st.markdown('<div class="value-text">19</div>', unsafe_allow_html=True)
+    st.markdown('<div class="label-text">Confidence Score</div>', unsafe_allow_html=True)
     if st.button("🔴 Start Recording"):
-        st.toast("Recording started...")
+        st.toast("Capturing voice...")
     st.markdown('</div>', unsafe_allow_html=True)
 
-with col2:
-    st.markdown('<div class="report-card" style="background:#1a1c1e;">', unsafe_allow_html=True)
-    st.write("##")
-    st.info("🔊 speech.wav")
-    st.caption("transbich.wav ready")
+with c2:
+    st.markdown('<div class="m-card" style="border-top: 2px solid #ff9800;">', unsafe_allow_html=True)
+    st.markdown('<div class="inner-wav-box">🔊 speech.wav</div>', unsafe_allow_html=True)
+    st.markdown('<div class="label-text" style="margin-top:15px;">transbich.wav ready</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-with col3:
-    st.markdown('<div class="report-card">', unsafe_allow_html=True)
-    st.markdown('<div class="metric-value">3%</div>', unsafe_allow_html=True)
-    st.markdown('<div class="metric-label">Fillers Found</div>', unsafe_allow_html=True)
-    st.markdown('<p style="color:#8e949a; font-size:12px; margin-top:10px;">Speaking Speed</p>', unsafe_allow_html=True)
+with c3:
+    st.markdown('<div class="m-card" style="border-top: 2px solid #00f2fe;">', unsafe_allow_html=True)
+    st.markdown('<div class="value-text">3%</div>', unsafe_allow_html=True)
+    st.markdown('<div class="label-text">Fillers Found</div>', unsafe_allow_html=True)
+    st.markdown('<p class="label-text" style="margin-top:20px;">Speaking: Normal</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Coaching Tips Section (Image reference: image_30fa7e.jpg)
-st.write("##")
+# --- 4. COACHING TIPS SECTION (image_310d08.jpg) ---
+st.markdown('<div class="coaching-section">', unsafe_allow_html=True)
 st.write("What you said:")
 st.markdown("""
-    <div class="tips-box">
-        <p style="font-size:16px; font-weight:600; color:#00f2fe;">💡 Coaching Tips</p>
-        <div class="tip-item"><span class="star-icon">⭐</span> <span style="color:#4caf50;">Success Tips: Your tone is very stable today.</span></div>
-        <div class="tip-item"><span class="star-icon" style="color:#4caf50;">⭐</span> <span style="color:#4caf50;">Success Time: High score in clarity.</span></div>
-        <div class="tip-item"><span class="star-icon" style="color:#ff9800;">⭐</span> <span style="color:#ff9800;">Warning Tips: Slow down during intro.</span></div>
-        <div class="tip-item"><span class="star-icon" style="color:#f44336;">⭐</span> <span style="color:#f44336;">Speaking Speed: Too fast at 0:03.</span></div>
-    </div>
+    <div class="tips-header-box">💡 Coaching Tips</div>
+    <div class="tip-line"><span class="star" style="color:#4caf50;">★</span> <span style="color:#4caf50;">Success: Your tone Score is very stable...</span></div>
+    <div class="tip-line"><span class="star" style="color:#4caf50;">★</span> <span style="color:#4caf50;">Warning Tips</span></div>
+    <div class="tip-line"><span class="star" style="color:#f44336;">★</span> <span style="color:#ff9800;">Filler: Um and Ah detected...</span></div>
+    <div class="tip-line"><span class="star" style="color:#00f2fe;">★</span> <span style="color:#00f2fe;">Info: Performance Score is high today</span></div>
 """, unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
