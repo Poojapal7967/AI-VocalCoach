@@ -1,139 +1,115 @@
 import streamlit as st
+import sounddevice as sd
+import numpy as np
+from scipy.io.wavfile import write
+import whisper
+import librosa
+import os
+import time
 
-# --- 1. ULTRA-NEON GLOW & GLASSMORPISM (Exact Match image_316f3a.png) ---
+# --- 1. PREMIUM NEON STYLING ---
 st.set_page_config(page_title="AI Vocal Coach Pro", layout="wide")
 
 st.markdown("""
     <style>
-    /* Dark Deep Theme */
-    .stApp { background: #0c0c1e; color: #ffffff; font-family: 'Inter', sans-serif; }
+    .stApp { background: #08081a; color: #ffffff; font-family: 'Inter', sans-serif; }
     
-    /* PERFORMANCE REPORT Header with Icon */
-    .header-style {
-        color: #ffcc00; font-weight: 700; font-size: 18px;
-        display: flex; align-items: center; margin-bottom: 20px;
-        text-transform: uppercase; letter-spacing: 1px;
+    /* Neon Glow Cards */
+    .attractive-card {
+        background: rgba(255, 255, 255, 0.04); border-radius: 20px; padding: 50px 20px; text-align: center;
+        backdrop-filter: blur(20px); height: 280px; display: flex; flex-direction: column; justify-content: center;
+        transition: 0.5s; position: relative;
     }
+    .glow-red { border: 2.5px solid #ff4b4b; box-shadow: 0 0 25px rgba(255, 75, 75, 0.6); }
+    .glow-orange { border: 2.5px solid #ff9800; box-shadow: 0 0 25px rgba(255, 152, 0, 0.6); }
+    .glow-cyan { border: 2.5px solid #00f2fe; box-shadow: 0 0 25px rgba(0, 242, 254, 0.6); }
 
-    /* TOP AUDIO BAR with Neon Red Glow (image_316f3a) */
-    .audio-player {
-        background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px; padding: 12px 20px; margin-bottom: 30px;
-        display: flex; align-items: center; justify-content: space-between;
-        backdrop-filter: blur(10px);
-    }
-    .glow-line { flex-grow: 1; height: 3px; background: #ff4b4b; margin: 0 20px; position: relative; border-radius: 5px; }
-    .glow-dot { 
-        width: 14px; height: 14px; background: #ff4b4b; border-radius: 50%; 
-        position: absolute; right: 0; top: -5px; 
-        box-shadow: 0 0 15px 5px rgba(255, 75, 75, 0.8); 
-    }
+    .hero-num { font-size: 85px; font-weight: 900; line-height: 0.8; margin-bottom: 15px; }
+    .hero-label { font-size: 14px; color: #a0a0b0; text-transform: uppercase; letter-spacing: 3px; }
 
-    /* NEON GLOWING CARDS (Precise Border Glow from image_316f3a) */
-    .neon-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 20px; padding: 50px 20px; text-align: center;
-        backdrop-filter: blur(15px); height: 280px;
-        display: flex; flex-direction: column; justify-content: center;
-        transition: 0.4s; position: relative;
+    /* Buttons Fix */
+    .stButton > button {
+        width: 100% !important; border-radius: 50px !important;
+        padding: 15px 0px !important; font-weight: 800 !important;
+        text-transform: uppercase; transition: 0.3s;
     }
-
-    /* Red Glow Card */
-    .card-red { 
-        border: 2px solid #ff4b4b; 
-        box-shadow: 0 0 20px rgba(255, 75, 75, 0.4); 
-        filter: drop-shadow(0 0 8px rgba(255, 75, 75, 0.3));
+    /* Start Button Red */
+    div[data-testid="column"]:nth-of-type(1) .stButton > button {
+        border: 2px solid #ff4b4b !important; box-shadow: 0px 0px 30px rgba(255, 75, 75, 0.6);
     }
-    /* Orange Glow Card */
-    .card-orange { 
-        border: 2px solid #ff9800; 
-        box-shadow: 0 0 20px rgba(255, 152, 0, 0.4); 
-        filter: drop-shadow(0 0 8px rgba(255, 152, 0, 0.3));
+    /* Stop Button White */
+    div[data-testid="column"]:nth-of-type(2) .stButton > button {
+        border: 2px solid #ffffff !important; box-shadow: 0px 0px 30px rgba(255, 255, 255, 0.3);
     }
-    /* Blue Glow Card */
-    .card-blue { 
-        border: 2px solid #00f2fe; 
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.4); 
-        filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.3));
-    }
-
-    /* Typography inside Cards */
-    .big-value { font-size: 75px; font-weight: 800; color: #ffffff; line-height: 1; margin-bottom: 5px; }
-    .label-sub { font-size: 14px; color: #8e949a; text-transform: uppercase; letter-spacing: 2px; font-weight: 500; }
-
-    /* START RECORDING Button with Heavy Neon Glow */
-    div.stButton > button {
-        background: transparent !important; color: #ffffff !important;
-        border: 2px solid #ff4b4b !important; border-radius: 40px !important;
-        padding: 15px 40px !important; font-weight: 700 !important;
-        box-shadow: 0px 0px 25px rgba(255, 75, 75, 0.5); 
-        width: 300px !important; margin-top: 30px; transition: 0.3s;
-        text-transform: uppercase;
-    }
-    div.stButton > button:hover { background: #ff4b4b !important; box-shadow: 0px 0px 40px #ff4b4b; color: #000 !important; }
-
-    /* Center WAV Box */
-    .inner-wav { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 18px; border: 1px solid #333; width: 90%; margin: 0 auto; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. TOP AUDIO PLAYER BAR ---
-st.caption("Recording Time (seconds)")
-st.markdown("""
-    <div class="audio-player">
-        <span style="font-weight:600;">▶ 0:00 / 0:05</span>
-        <div class="glow-line"><div class="glow-dot"></div></div>
-        <span style="font-size:20px;">🔊 ⋮</span>
-    </div>
-""", unsafe_allow_html=True)
+# --- 2. BACKEND INITIALIZATION ---
+if 'recording' not in st.session_state: st.session_state.recording = False
+if 'analysis_ready' not in st.session_state: st.session_state.analysis_ready = False
 
-# --- 3. PERFORMANCE GRID WITH NEON EFFECTS ---
-st.markdown('<div class="header-style">📊 PERFORMANCE REPORT</div>', unsafe_allow_html=True)
+@st.cache_resource
+def load_model(): return whisper.load_model("base")
+model = load_model()
 
-c1, c2, c3 = st.columns(3)
+# --- 3. PERFORMANCE GRID ---
+st.markdown('<p style="color:#ffcc00; font-weight:800; font-size:20px;">📊 PERFORMANCE REPORT</p>', unsafe_allow_html=True)
 
-with c1:
-    st.markdown("""
-        <div class="neon-card card-red">
-            <div class="big-value">19</div>
-            <div class="label-sub">Confidence Score</div>
-        </div>
-    """, unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown('<div class="attractive-card glow-red"><div class="hero-num">19</div><div class="hero-label">Confidence Score</div></div>', unsafe_allow_html=True)
+with col2:
+    # Audio Player Box
+    st.markdown('<div class="attractive-card glow-orange">', unsafe_allow_html=True)
+    if os.path.exists("speech.wav"):
+        st.audio("speech.wav")
+        st.markdown('<div class="hero-label" style="margin-top:20px;">VOICE RECORDED</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div style="color:#555; font-size:40px;">🔊</div><div class="hero-label">No Record Found</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+with col3:
+    st.markdown('<div class="attractive-card glow-cyan"><div class="hero-num">3%</div><div class="hero-label">Fillers Found</div></div>', unsafe_allow_html=True)
 
-with c2:
-    st.markdown("""
-        <div class="neon-card card-orange">
-            <div class="inner-wav">🔊 speech.wav</div>
-            <div class="label-sub" style="margin-top:25px;">Transbich.wav Ready</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-with c3:
-    st.markdown("""
-        <div class="neon-card card-blue">
-            <div class="big-num" style="font-size:75px; font-weight:800;">3%</div>
-            <div class="label-sub">Fillers Found</div>
-            <div style="font-size:12px; color:#8e949a; margin-top:20px; font-style:italic;">Speaking: Normal</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-# START RECORDING Button at the bottom
+# --- 4. START & STOP CONTROLS (Logic Fix) ---
 st.write("##")
-if st.button("🔴 START RECORDING"):
-    st.toast("Neon AI Engine Active...")
+c_l, c_center, c_r = st.columns([1, 2, 1])
 
-# --- 4. COACHING FEEDBACK (image_316f3a style) ---
-st.write("##")
-st.markdown("""
-    <div style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 15px; padding: 25px;">
-        <p style="color:#00f2fe; font-weight:bold; font-size:18px; margin-bottom:20px;">💡 COACHING TIPS</p>
-        <div style="margin-bottom:12px; display:flex; align-items:center;">
-            <span style="color:#4caf50; font-size:20px; margin-right:15px;">★</span> 
-            <span style="color:#4caf50; font-weight:500;">Success: Your vocal tone is very stable today.</span>
+with c_center:
+    btn_col1, btn_col2 = st.columns(2)
+    
+    with btn_col1:
+        if st.button("🎤 START"):
+            st.session_state.recording = True
+            st.session_state.analysis_ready = False
+            # Sample 5-second recording logic
+            fs = 44100
+            duration = 5 
+            st.toast("Recording for 5 seconds...", icon="🔴")
+            rec_data = sd.rec(int(duration * fs), samplerate=fs, channels=1)
+            sd.wait()
+            write("speech.wav", fs, rec_data)
+            st.session_state.recording = False
+            st.session_state.analysis_ready = True
+            st.rerun()
+
+    with btn_col2:
+        if st.button("🛑 ANALYZE"):
+            if os.path.exists("speech.wav"):
+                st.toast("Analyzing with Whisper AI...", icon="⌛")
+                result = model.transcribe("speech.wav")
+                st.session_state.transcription = result['text']
+                st.rerun()
+            else:
+                st.warning("Pehle recording start karein!")
+
+# --- 5. COACHING FEEDBACK ---
+if st.session_state.analysis_ready and 'transcription' in st.session_state:
+    st.write("##")
+    st.markdown(f"""
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid #00f2fe; border-radius: 20px; padding: 30px;">
+            <p style="color:#00f2fe; font-weight:900;">💡 TRANSCRIPTION & TIPS</p>
+            <p style="color:#fff; font-style:italic;">"{st.session_state.transcription}"</p>
+            <hr style="border-color:#333;">
+            <div style="color:#4caf50;">★ Success: Your voice is now visible and analyzed!</div>
         </div>
-        <div style="margin-bottom:12px; display:flex; align-items:center;">
-            <span style="color:#ff9800; font-size:20px; margin-right:15px;">★</span> 
-            <span style="color:#ff9800; font-weight:500;">Warning: Detected slight filler word frequency at 0:03.</span>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
