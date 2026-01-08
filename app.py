@@ -1,121 +1,112 @@
 import streamlit as st
 
-# --- 1. PRECISE UI STYLING (Pixel Perfect Match) ---
+# --- 1. PREMIUM NEON BOXED UI (Merging image_3114e4 & image_31155e) ---
 st.set_page_config(page_title="AI Vocal Coach Pro", layout="wide")
 
 st.markdown("""
     <style>
-    /* Background & Global Font */
-    .stApp { background: #1a1c1e; color: #ffffff; font-family: 'Inter', sans-serif; }
+    /* Dark Deep Theme */
+    .stApp { background: #0c0c1e; color: #ffffff; font-family: 'Inter', sans-serif; }
     
-    /* Top Recording Time Bar (image_30f755.jpg) */
+    /* Top Recording Bar with Glow (image_31155e) */
     .recording-bar {
-        background: #232629; border: 1px solid #363a3f;
-        border-radius: 12px; padding: 10px 20px; margin-bottom: 25px;
+        background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px; padding: 10px 20px; margin-bottom: 30px;
         display: flex; align-items: center; justify-content: space-between;
+        backdrop-filter: blur(10px);
     }
-    .waveform-line { flex-grow: 1; height: 3px; background: #ff4b4b; margin: 0 20px; position: relative; }
-    .waveform-dot { 
+    .neon-line { flex-grow: 1; height: 3px; background: #ff4b4b; margin: 0 20px; position: relative; }
+    .neon-dot { 
         width: 14px; height: 14px; background: #ff4b4b; border-radius: 50%; 
-        position: absolute; right: 0; top: -5px; box-shadow: 0 0 12px #ff4b4b; 
+        position: absolute; right: 0; top: -5px; box-shadow: 0 0 15px #ff4b4b; 
     }
 
-    /* Main Performance Report Container (image_310d08.jpg) */
-    .report-main {
-        background: #232629; border: 1px solid #363a3f;
-        border-radius: 20px; padding: 30px; margin-top: 10px;
+    /* Professional Boxed Cards (image_3114e4 structure + Neon effects) */
+    .metric-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px; padding: 40px; text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px); height: 260px;
+        display: flex; flex-direction: column; justify-content: center;
+        transition: 0.3s;
     }
+    .metric-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.08); }
 
-    /* Metric Grid - Three Equal Cards */
-    .metrics-container {
-        display: flex; justify-content: space-between; gap: 20px; margin-bottom: 30px;
-    }
+    /* Neon Borders from image_31155e */
+    .border-red { border-top: 4px solid #ff4b4b; box-shadow: 0 -5px 15px rgba(255, 75, 75, 0.2); }
+    .border-orange { border-top: 4px solid #ff9800; box-shadow: 0 -5px 15px rgba(255, 152, 0, 0.2); }
+    .border-blue { border-top: 4px solid #00f2fe; box-shadow: 0 -5px 15px rgba(0, 242, 254, 0.2); }
 
-    .m-card {
-        background: #2a2d32; border: 1px solid #3c4148;
-        border-radius: 15px; padding: 25px; text-align: center; flex: 1;
-        min-height: 180px; display: flex; flex-direction: column; justify-content: center;
-    }
+    /* Typography */
+    .big-num { font-size: 65px; font-weight: 800; color: #ffffff; line-height: 1; margin-bottom: 10px; }
+    .label-sub { font-size: 14px; color: #8e949a; text-transform: uppercase; letter-spacing: 2px; }
 
-    /* Big Numeric Values */
-    .value-text { font-size: 58px; font-weight: 700; color: #ffffff; line-height: 1; margin-bottom: 8px; }
-    .label-text { font-size: 14px; color: #8e949a; }
-
-    /* START RECORDING NEON BUTTON (The Red Glow) */
+    /* Start Recording Neon Button (image_31155e Exact Style) */
     div.stButton > button {
         background: transparent !important; color: #ffffff !important;
         border: 2px solid #ff4b4b !important; border-radius: 30px !important;
-        padding: 12px 25px !important; font-weight: 600 !important;
-        box-shadow: 0px 0px 18px rgba(255, 75, 75, 0.45); 
-        width: 100% !important; margin-top: 15px;
+        padding: 12px 35px !important; font-weight: 700 !important;
+        box-shadow: 0px 0px 20px rgba(255, 75, 75, 0.5); 
+        width: 250px !important; margin-top: 25px; transition: 0.3s;
     }
+    div.stButton > button:hover { background: #ff4b4b !important; box-shadow: 0px 0px 30px #ff4b4b; }
 
-    /* Speech.wav Inner Box */
-    .inner-wav-box {
-        background: #1a1c1e; border: 1px solid #333;
-        border-radius: 12px; padding: 15px; display: flex; align-items: center; justify-content: center;
-    }
-
-    /* COACHING TIPS (image_310d08.jpg) */
-    .coaching-section { margin-top: 30px; }
-    .tips-header-box { 
-        background: #2a2d32; border-radius: 10px; padding: 12px 20px; 
-        border-bottom: 2px solid #00f2fe; margin-bottom: 20px;
-        display: flex; align-items: center;
-    }
-    .tip-line { margin-bottom: 12px; display: flex; align-items: center; font-size: 15px; }
-    .star { font-size: 20px; margin-right: 15px; }
+    /* Central WAV Box */
+    .wav-container { background: #1a1c1e; border-radius: 10px; padding: 15px; border: 1px solid #333; width: 100%; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. RECORDING TIME BAR ---
+# --- 2. TOP AUDIO BAR SECTION ---
 st.caption("Recording Time (seconds)")
 st.markdown("""
     <div class="recording-bar">
         <span>▶ 0:00 / 0:05</span>
-        <div class="waveform-line"><div class="waveform-dot"></div></div>
+        <div class="neon-line"><div class="neon-dot"></div></div>
         <span>🔊 ⋮</span>
     </div>
 """, unsafe_allow_html=True)
 
-# --- 3. PERFORMANCE REPORT SECTION (Exact Image Match) ---
-st.markdown('<div class="report-main">', unsafe_allow_html=True)
-st.markdown('<p style="font-size:18px; font-weight:600; margin-bottom:25px;">☗ Performance Report</p>', unsafe_allow_html=True)
+# --- 3. PERFORMANCE GRID (image_3114e4 structure + Premium Effects) ---
+st.markdown('<p style="font-size:18px; font-weight:600; margin-bottom:25px; color:#ffcc00;">📊 PERFORMANCE REPORT</p>', unsafe_allow_html=True)
 
-# Three Metric Columns
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    st.markdown('<div class="m-card">', unsafe_allow_html=True)
-    st.markdown('<div class="value-text">19</div>', unsafe_allow_html=True)
-    st.markdown('<div class="label-text">Confidence Score</div>', unsafe_allow_html=True)
-    if st.button("🔴 Start Recording"):
-        st.toast("Capturing voice...")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("""
+        <div class="metric-card border-red">
+            <div class="big-num">19</div>
+            <div class="label-sub">Confidence Score</div>
+        </div>
+    """, unsafe_allow_html=True)
 
 with c2:
-    st.markdown('<div class="m-card" style="border-top: 2px solid #ff9800;">', unsafe_allow_html=True)
-    st.markdown('<div class="inner-wav-box">🔊 speech.wav</div>', unsafe_allow_html=True)
-    st.markdown('<div class="label-text" style="margin-top:15px;">transbich.wav ready</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("""
+        <div class="metric-card border-orange">
+            <div class="wav-container">🔊 speech.wav</div>
+            <div class="label-sub" style="margin-top:20px;">Transbich.wav Ready</div>
+        </div>
+    """, unsafe_allow_html=True)
 
 with c3:
-    st.markdown('<div class="m-card" style="border-top: 2px solid #00f2fe;">', unsafe_allow_html=True)
-    st.markdown('<div class="value-text">3%</div>', unsafe_allow_html=True)
-    st.markdown('<div class="label-text">Fillers Found</div>', unsafe_allow_html=True)
-    st.markdown('<p class="label-text" style="margin-top:20px;">Speaking: Normal</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("""
+        <div class="metric-card border-blue">
+            <div class="big-num">3%</div>
+            <div class="label-sub">Fillers Found</div>
+            <div style="font-size:13px; color:#8e949a; margin-top:15px; font-style:italic;">Speaking: Normal</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
+# Start Recording Button at the bottom left
+if st.button("🔴 START RECORDING"):
+    st.toast("Capturing high-fidelity audio...")
 
-# --- 4. COACHING TIPS SECTION (image_310d08.jpg) ---
-st.markdown('<div class="coaching-section">', unsafe_allow_html=True)
-st.write("What you said:")
+# --- 4. COACHING TIPS (Premium Look) ---
+st.write("##")
 st.markdown("""
-    <div class="tips-header-box">💡 Coaching Tips</div>
-    <div class="tip-line"><span class="star" style="color:#4caf50;">★</span> <span style="color:#4caf50;">Success: Your tone Score is very stable...</span></div>
-    <div class="tip-line"><span class="star" style="color:#4caf50;">★</span> <span style="color:#4caf50;">Warning Tips</span></div>
-    <div class="tip-line"><span class="star" style="color:#f44336;">★</span> <span style="color:#ff9800;">Filler: Um and Ah detected...</span></div>
-    <div class="tip-line"><span class="star" style="color:#00f2fe;">★</span> <span style="color:#00f2fe;">Info: Performance Score is high today</span></div>
+    <div style="background: rgba(0, 242, 254, 0.05); border-left: 5px solid #00f2fe; border-radius: 12px; padding: 25px;">
+        <p style="color:#00f2fe; font-weight:bold; font-size:18px; margin-bottom:15px;">💡 COACHING FEEDBACK</p>
+        <div style="margin-bottom:12px;">⭐ <span style="color:#4caf50;">Success: Your vocal tone is very stable today.</span></div>
+        <div style="margin-bottom:12px;">⭐ <span style="color:#ff9800;">Warning: Detected slight filler word frequency at 0:03.</span></div>
+        <div style="margin-bottom:12px;">⭐ <span style="color:#f44336;">Speed: Pace was high during the opening sentence.</span></div>
+    </div>
 """, unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
