@@ -1,140 +1,129 @@
 import streamlit as st
-import sounddevice as sd
-import numpy as np
-from scipy.io.wavfile import write
-import whisper
-import librosa
 import os
 import time
-import json
-from datetime import datetime
-import pandas as pd
-import plotly.express as px
 
-# --- 1. GLASSMORPISM & NEON UI STYLING (Inspired by image_302c23.jpg) ---
+# --- 1. PRECISE UI STYLING (Same as Reference Image) ---
 st.set_page_config(page_title="AI Vocal Coach Pro", layout="wide")
 
 st.markdown("""
     <style>
-    .stApp { background: #0c0c1e; color: #ffffff; font-family: 'Inter', sans-serif; }
+    /* Main Dark Theme */
+    .stApp { background: #1a1c1e; color: #ffffff; }
     
-    /* Hero Section */
-    .hero-title { 
-        font-size: 50px; font-weight: 800; text-align: center;
-        background: linear-gradient(90deg, #ffffff, #ffcc00, #7000ff);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    /* Performance Report Glass Box */
+    .performance-container {
+        background: #232629;
+        border-radius: 15px;
+        padding: 25px;
+        border: 1px solid #363a3f;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        margin-top: 20px;
     }
 
-    /* Glassmorphism Performance Box (image_302c23.jpg) */
-    .performance-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 25px;
-        padding: 30px;
-        backdrop-filter: blur(15px);
+    /* Top Audio Bar Style */
+    .audio-player-mock {
+        background: #232629;
+        border-radius: 10px;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        border: 1px solid #363a3f;
         margin-bottom: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
-    /* Start Recording Neon Button */
+    /* Metric Cards within the Report */
+    .report-card {
+        background: #2a2d32;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid #3c4148;
+        height: 100%;
+    }
+
+    /* Start Recording Neon Button (The Red Glow) */
     div.stButton > button {
         background: transparent !important;
         color: #ffffff !important;
         border: 2px solid #ff4b4b !important;
-        border-radius: 30px !important;
-        padding: 15px 30px !important;
+        border-radius: 20px !important;
+        padding: 10px 20px !important;
         font-weight: bold !important;
-        box-shadow: 0px 0px 15px rgba(255, 75, 75, 0.4);
-        transition: 0.3s;
+        box-shadow: 0px 0px 10px rgba(255, 75, 75, 0.4);
         width: 100%;
-    }
-    div.stButton > button:hover {
-        background: #ff4b4b !important;
-        box-shadow: 0px 0px 25px rgba(255, 75, 75, 0.6);
+        margin-top: 10px;
     }
 
-    /* Coaching Tips Styling */
-    .tips-header { 
-        background: rgba(0, 242, 254, 0.1); 
-        border: 1px solid #00f2fe; 
-        padding: 15px; border-radius: 12px;
+    /* Coaching Tips Section Styling */
+    .tips-box {
+        background: rgba(0, 242, 254, 0.05);
+        border: 1px solid rgba(0, 242, 254, 0.2);
+        padding: 15px;
+        border-radius: 8px;
         margin-top: 15px;
     }
     
-    .tip-item { font-size: 16px; margin-bottom: 8px; display: flex; align-items: center; }
-    .tip-icon { margin-right: 10px; }
-
-    /* Metric Styling */
-    [data-testid="stMetricValue"] { font-size: 45px !important; font-weight: 800 !important; color: #ffffff; }
+    .tip-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 14px; }
+    .star-icon { margin-right: 10px; font-size: 18px; }
+    
+    /* Metrics Typography */
+    .metric-value { font-size: 48px; font-weight: 700; color: #ffffff; line-height: 1; }
+    .metric-label { font-size: 14px; color: #8e949a; margin-top: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. LOGIC FUNCTIONS ---
-HISTORY_FILE = 'vocal_history.json'
+# --- 2. LAYOUT CONSTRUCTION ---
 
-if 'active_test' not in st.session_state: st.session_state.active_test = "Voice Rating"
-if 'recording_start' not in st.session_state: st.session_state.recording_start = None
-if 'analysis_ready' not in st.session_state: st.session_state.analysis_ready = False
+# Top Audio Bar Mockup (Image reference: image_30f755.jpg)
+st.caption("Recording Time (seconds)")
+st.markdown("""
+    <div class="audio-player-mock">
+        <span style="margin-right:15px;">▶ 0:00 / 0:05</span>
+        <div style="flex-grow:1; height:2px; background:#ff4b4b; position:relative;">
+            <div style="width:10px; height:10px; background:#ff4b4b; border-radius:50%; position:absolute; right:0; top:-4px; box-shadow:0 0 10px #ff4b4b;"></div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
-@st.cache_resource
-def load_model(): return whisper.load_model("base")
-model = load_model()
+# Main Performance Report Section (Image reference: image_302c23.jpg)
+st.markdown('<div class="performance-container">', unsafe_allow_html=True)
+st.markdown('<p style="font-weight:600; font-size:18px; margin-bottom:15px;">📊 Performance Report</p>', unsafe_allow_html=True)
 
-# --- 3. MAIN INTERFACE ---
-st.markdown('<p class="hero-title">AI Vocal Coach Pro</p>', unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
 
-# Navigation Cards (Like image_97f6a9.png)
-col_nav1, col_nav2, col_nav3 = st.columns(3)
-with col_nav1:
-    if st.button("🎭 Voice Rating"): st.session_state.active_test = "Voice Rating"
-with col_nav2:
-    if st.button("🌍 Clarity Check"): st.session_state.active_test = "Clarity Check"
-with col_nav3:
-    if st.button("📈 Progress Graph"): st.session_state.active_test = "Progress"
-
-st.write("---")
-
-if st.session_state.active_test == "Progress":
-    # (Aapka plotly graph logic yahan aayega)
-    st.subheader("📈 Performance History")
-    if os.path.exists(HISTORY_FILE):
-        df = pd.DataFrame(json.load(open(HISTORY_FILE)))
-        fig = px.line(df, x='Date', y='Pace', template='plotly_dark')
-        st.plotly_chart(fig, use_container_width=True)
-    else: st.info("No data yet.")
-
-else:
-    # --- PERFORMANCE REPORT UI (As per image_302c23.jpg) ---
-    st.markdown('<div class="performance-card">', unsafe_allow_html=True)
-    st.write("### 📊 Performance Report")
-    
-    met1, met2, met3 = st.columns([1, 1.2, 1])
-    
-    with met1:
-        st.metric("Confidence Score", "19") # Sample Data
-        if st.button("🔴 Start Recording"):
-            st.session_state.recording_start = time.time()
-            st.session_state.raw_audio = sd.rec(int(300 * 44100), samplerate=44100, channels=1)
-            st.rerun()
-
-    with met2:
-        # Central Visualizer Placeholder
-        st.write("##")
-        st.info("🔊 speech.wav")
-        st.caption("transcribe.wav ready")
-
-    with met3:
-        st.metric("Fillers Found", "3%")
-        st.caption("Speaking Speed: Normal")
-
+with col1:
+    st.markdown('<div class="report-card">', unsafe_allow_html=True)
+    st.markdown('<div class="metric-value">19</div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-label">Confidence Score</div>', unsafe_allow_html=True)
+    if st.button("🔴 Start Recording"):
+        st.toast("Recording started...")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- COACHING TIPS (As per image_302c23.jpg) ---
-    st.markdown('<div class="tips-header">', unsafe_allow_html=True)
-    st.write("💡 **Coaching Tips**")
-    st.markdown("""
-    <div class="tip-item"><span class="tip-icon">🟢</span> Success: Your tone is very stable today.</div>
-    <div class="tip-item"><span class="tip-icon">🟠</span> Warning: Slow down during the first 10 seconds.</div>
-    <div class="tip-item"><span class="tip-icon">🔴</span> Filler: "Um" and "Ah" detected more than usual.</div>
-    """, unsafe_allow_html=True)
+with col2:
+    st.markdown('<div class="report-card" style="background:#1a1c1e;">', unsafe_allow_html=True)
+    st.write("##")
+    st.info("🔊 speech.wav")
+    st.caption("transbich.wav ready")
     st.markdown('</div>', unsafe_allow_html=True)
+
+with col3:
+    st.markdown('<div class="report-card">', unsafe_allow_html=True)
+    st.markdown('<div class="metric-value">3%</div>', unsafe_allow_html=True)
+    st.markdown('<div class="metric-label">Fillers Found</div>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#8e949a; font-size:12px; margin-top:10px;">Speaking Speed</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Coaching Tips Section (Image reference: image_30fa7e.jpg)
+st.write("##")
+st.write("What you said:")
+st.markdown("""
+    <div class="tips-box">
+        <p style="font-size:16px; font-weight:600; color:#00f2fe;">💡 Coaching Tips</p>
+        <div class="tip-item"><span class="star-icon">⭐</span> <span style="color:#4caf50;">Success Tips: Your tone is very stable today.</span></div>
+        <div class="tip-item"><span class="star-icon" style="color:#4caf50;">⭐</span> <span style="color:#4caf50;">Success Time: High score in clarity.</span></div>
+        <div class="tip-item"><span class="star-icon" style="color:#ff9800;">⭐</span> <span style="color:#ff9800;">Warning Tips: Slow down during intro.</span></div>
+        <div class="tip-item"><span class="star-icon" style="color:#f44336;">⭐</span> <span style="color:#f44336;">Speaking Speed: Too fast at 0:03.</span></div>
+    </div>
+""", unsafe_allow_html=True)
