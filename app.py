@@ -8,7 +8,7 @@ import librosa.display
 import matplotlib.pyplot as plt
 import os
 
-# --- 1. ULTRA-NEON ATTRATIVE UI (Pixel Perfect) ---
+# --- 1. ULTRA-NEON ATTRATIVE UI ---
 st.set_page_config(page_title="AI Vocal Coach Pro", layout="wide")
 
 st.markdown("""
@@ -27,7 +27,7 @@ st.markdown("""
 
     .neon-card {
         background: rgba(255, 255, 255, 0.04); border-radius: 25px; padding: 45px 20px;
-        text-align: center; backdrop-filter: blur(20px); height: 320px;
+        text-align: center; backdrop-filter: blur(20px); height: 350px;
         display: flex; flex-direction: column; justify-content: center; align-items: center;
         border: 1px solid rgba(255, 255, 255, 0.1); transition: 0.5s;
     }
@@ -54,7 +54,6 @@ st.markdown("""
         background: transparent !important; color: white !important;
     }
     
-    /* Highlight Styling */
     .highlight { color: #ff4b4b; font-weight: bold; text-decoration: underline; }
     </style>
     """, unsafe_allow_html=True)
@@ -63,7 +62,6 @@ st.markdown("""
 def get_vocal_stats(file_path):
     y, sr = librosa.load(file_path)
     pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
-    # Extracting fundamental frequency (F0)
     avg_pitch = np.mean(pitches[pitches > 0]) if np.any(pitches > 0) else 0
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
     return tempo, avg_pitch, y, sr
@@ -72,19 +70,15 @@ def get_smart_feedback(transcript, tempo):
     fillers = ["um", "ah", "basically", "actually", "like", "hmmm"]
     words = transcript.lower().split()
     found_fillers = [w for w in words if w in fillers]
-    
     tips = []
-    # Logic for speed feedback
     if tempo > 140: tips.append("⚠️ **Speed:** Too fast! Try to slow down for better clarity.")
     elif tempo < 80: tips.append("⚠️ **Speed:** A bit slow. Try to be more energetic.")
     else: tips.append("✅ **Speed:** Perfect pacing! Maintain this rhythm.")
     
-    # Logic for filler words
     if len(found_fillers) > 0:
-        tips.append(f"⚠️ **Clarity:** Found {len(found_fillers)} filler words. Practice pausing instead of using '{found_fillers[0]}'.")
+        tips.append(f"⚠️ **Clarity:** Found {len(found_fillers)} filler words. Practice pausing.")
     else:
         tips.append("✅ **Clarity:** Great job! No major filler words detected.")
-    
     return tips, found_fillers
 
 # --- 3. LOGIC INITIALIZATION ---
@@ -102,9 +96,25 @@ st.markdown('<p style="color:#ffcc00; font-weight:800; font-size:20px; letter-sp
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    # We will update these metrics dynamically after analysis
-    conf_score = st.session_state.get('conf_score', 19)
-    st.markdown(f'<div class="neon-card glow-red"><div class="big-num">{conf_score}</div><div class="label-sub">Confidence Score</div></div>', unsafe_allow_html=True)
+    # Naya Modern 100 Scale Card (image_e41ca4 Style)
+    score = st.session_state.get('conf_score', 85)
+    sentiment_text = "POSITIVE" if score >= 70 else "NEUTRAL"
+    sentiment_emoji = "😊" if score >= 70 else "😐"
+    sentiment_color = "#4caf50" if score >= 70 else "#ff9800"
+
+    st.markdown(f"""
+        <div class="neon-card glow-red">
+            <div class="label-sub">CONFIDENCE SCORE</div>
+            <div class="big-num">{score}<span style="font-size:30px;">/100</span></div>
+            <div style="height:8px; background:rgba(255,255,255,0.1); border-radius:10px; width:85%; margin:15px auto;">
+                <div style="height:100%; width:{score}%; background:linear-gradient(to right, #00f2fe, #4caf50); border-radius:10px;"></div>
+            </div>
+            <div style="display:inline-flex; align-items:center; background:rgba(255,255,255,0.05); padding:5px 15px; border-radius:50px; border:1px solid {sentiment_color};">
+                <span style="font-size:18px; margin-right:8px;">{sentiment_emoji}</span>
+                <span style="color:{sentiment_color}; font-weight:bold; font-size:12px; letter-spacing:1px;">SENTIMENT: {sentiment_text}</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
 with c2:
     st.markdown('<div class="neon-card glow-orange">', unsafe_allow_html=True)
@@ -121,8 +131,8 @@ with c2:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with c3:
-    filler_percent = st.session_state.get('filler_count', 3)
-    st.markdown(f'<div class="neon-card glow-cyan"><div class="big-num">{filler_percent}%</div><div class="label-sub">Fillers Found</div></div>', unsafe_allow_html=True)
+    filler_p = st.session_state.get('filler_count', 3)
+    st.markdown(f'<div class="neon-card glow-cyan"><div class="big-num">{filler_p}%</div><div class="label-sub">Fillers Found</div></div>', unsafe_allow_html=True)
 
 # --- 5. CONTROLS & ANALYSIS ---
 st.write("##")
@@ -134,12 +144,10 @@ with c_btn:
         if st.button("🎤 START"):
             st.session_state.recording = True
             st.session_state.analysis_ready = False
-            fs = 44100
-            duration = 5 
-            st.toast("Recording for 5 seconds...", icon="🔴")
+            fs, duration = 44100, 5
             rec_data = sd.rec(int(duration * fs), samplerate=fs, channels=1)
             sd.wait()
-            write("speech.wav", fs, (rec_data * 32767).astype(np.int16)) # Fixed bit depth
+            write("speech.wav", fs, (rec_data * 32767).astype(np.int16))
             st.session_state.recording = False
             st.session_state.analysis_ready = True
             st.rerun()
@@ -147,28 +155,20 @@ with c_btn:
     with b2:
         if st.button("🛑 ANALYZE"):
             if os.path.exists("speech.wav"):
-                with st.spinner("AI Analysis in progress..."):
-                    # Whisper Transcription
+                with st.spinner("AI Analysis..."):
                     result = model.transcribe("speech.wav")
                     st.session_state.transcription = result['text']
-                    
-                    # Advanced Stats
-                    tempo, pitch, y, sr = get_vocal_stats("speech.wav")
+                    tempo, _, _, _ = get_vocal_stats("speech.wav")
                     tips, fillers = get_smart_feedback(result['text'], tempo)
-                    
-                    # Update session state for UI
-                    st.session_state.tempo = tempo
                     st.session_state.tips = tips
                     st.session_state.filler_count = len(fillers)
-                    st.session_state.conf_score = int(80 + (tempo/10)) if tempo < 140 else 60
+                    st.session_state.conf_score = int(80 + (tempo/10)) if tempo < 140 else 65
                     st.session_state.analysis_ready = True
                     st.rerun()
 
-# --- 6. ADVANCED DASHBOARD (Visuals & Feedback) ---
+# --- 6. ADVANCED DASHBOARD ---
 if st.session_state.analysis_ready and 'transcription' in st.session_state:
     st.write("##")
-    
-    # Transcription with Highlighter
     t_text = st.session_state.transcription
     for f in ["um", "ah", "basically", "actually", "like"]:
         t_text = t_text.replace(f, f'<span class="highlight">{f}</span>')
@@ -181,7 +181,7 @@ if st.session_state.analysis_ready and 'transcription' in st.session_state:
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                 <div>
                     <p style="color:#ffcc00; font-weight:bold;">Coaching Tips:</p>
-                    {"".join([f'<div style="margin-bottom:5px;">{tip}</div>' for tip in st.session_state.tips])}
+                    {"".join([f'<div style="margin-bottom:5px;">{tip}</div>' for tip in st.session_state.get('tips', [])])}
                 </div>
                 <div style="text-align:center;">
                     <p style="color:#ffcc00; font-weight:bold;">Speech Waveform</p>
@@ -191,7 +191,6 @@ if st.session_state.analysis_ready and 'transcription' in st.session_state:
         </div>
     """, unsafe_allow_html=True)
     
-    # Generating the Waveform Graph (image_30f755.jpg style)
     tempo, pitch, y, sr = get_vocal_stats("speech.wav")
     fig, ax = plt.subplots(figsize=(8, 2))
     ax.set_facecolor('#08081a')
