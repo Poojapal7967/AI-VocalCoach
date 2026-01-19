@@ -18,7 +18,7 @@ except:
     st.error("Invalid API Key.")
 
 # --- 1. USER-FRIENDLY UI STYLING ---
-st.set_page_config(page_title="Speeko AI Coach", layout="wide")
+st.set_page_config(page_title="Speek AI Coach", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #F7F9FC; color: #333333; font-family: 'Inter', sans-serif; }
@@ -89,7 +89,7 @@ with st.sidebar:
 
 # --- 4. MAIN DASHBOARD ---
 if nav == "🏠 Dashboard":
-    st.title("Ready to polish your speaking?") # User-friendly headline
+    st.title("Speak with confidence?") # User-friendly headline
     
     col_l, col_r = st.columns([1, 1])
     
