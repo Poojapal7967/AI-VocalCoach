@@ -97,7 +97,7 @@ if nav == "🏠 Dashboard":
         st.markdown('<div class="metric-card"><p class="card-title">1. Record Your Voice</p>', unsafe_allow_html=True)
         st.write("Click below and speak for 5 seconds. We'll analyze your style.")
         
-        if b_rec := st.button("🎤 START RECORDING NOW"):
+        if b_rec := st.button("🎤 START RECORDING "):
             with st.status("Listening... Speak now!"):
                 rec = sd.rec(int(5 * 44100), samplerate=44100, channels=1, dtype='float32')
                 sd.wait()
