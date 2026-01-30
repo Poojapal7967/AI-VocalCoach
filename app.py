@@ -39,10 +39,16 @@ st.markdown("""
     .stButton>button { 
         background: linear-gradient(90deg, #FF00CC, #3333FF); color: white; border-radius: 12px; 
         padding: 12px 30px; border: none; font-weight: 800; transition: 0.3s; width: 100%;
+        display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px;
     }
     .delete-container button { background: linear-gradient(90deg, #FF4B4B, #FF0000) !important; }
     .metric-card { background: #0D1117; border-radius: 20px; padding: 25px; border: 1px solid #30363D; margin-bottom: 20px; }
     .feedback-box { background: rgba(108, 92, 231, 0.1); border-left: 5px solid #6C5CE7; padding: 15px; border-radius: 10px; margin-top: 10px; }
+    
+    /* Alignment Fixes for Icons and Sidebar */
+    [data-testid="stSidebarNav"] span, .stRadio label { display: flex !important; align-items: center !important; gap: 10px !important; }
+    .insight-row { display: flex; align-items: center; margin-bottom: 15px; font-size: 1.1rem; }
+    .insight-icon { margin-right: 12px; width: 25px; text-align: center; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -60,15 +66,11 @@ def get_vocal_analysis(file_path):
 
 def get_coaching_feedback(pace, fillers, balance, mode):
     feedback_list = []
-    # Pace Analysis
     if pace > 165: feedback_list.append("🚀 **Slow Down:** Your pace is too fast. Use pauses to improve clarity.")
     elif pace < 100: feedback_list.append("⏳ **Speed Up:** You're a bit slow. Increase energy to keep the audience engaged.")
-    # Filler Analysis
     if fillers > 2: feedback_list.append(f"💬 **Reduce Fillers:** Detected {fillers} filler words. Try using silent pauses instead of 'um/ah'.")
-    # Engagement
     if balance < 75: feedback_list.append("⏱️ **Flow:** Too many silent gaps. Try to maintain a more consistent stream of thought.")
     
-    # Mode Specific Tip
     mode_tips = {
         "🎤 Public Speaking": "🌟 Stage Tip: Project your voice further for impact.",
         "🎧 Anchoring": "🎙️ Studio Tip: Focus on resonant tones and crisp articulation.",
@@ -115,7 +117,7 @@ else:
 
             if os.path.exists("speech.wav"):
                 st.audio("speech.wav")
-                b_ana, b_del = st.columns(2)
+                b_ana, b_del = st.columns(2, gap="medium")
                 with b_ana:
                     if st.button("🛑 ANALYZE & STORE"):
                         with st.spinner("AI Evaluating..."):
@@ -124,7 +126,6 @@ else:
                             pace, energy, balance, y, sr = get_vocal_analysis("speech.wav")
                             fillers = sum([1 for w in res['text'].lower().split() if w in ["um", "ah", "uh", "like"]])
                             coach_data = get_coaching_feedback(pace, fillers, balance, mode_sel)
-                            
                             st.session_state.vocal_history.append({'Date': pd.Timestamp.now().strftime('%H:%M'), 'Pace': pace, 'Balance': balance, 'Mode': mode_sel})
                             st.session_state.update({
                                 'trans': res['text'], 'pace': pace, 'energy': energy, 
@@ -144,10 +145,10 @@ else:
         with c2:
             st.markdown('<div class="metric-card"><h4>2. AI INSIGHTS</h4>', unsafe_allow_html=True)
             if st.session_state.get('ready'):
-                st.write(f"⏳ **Speed:** {st.session_state.pace} BPM")
-                st.write(f"🔥 **Energy:** {st.session_state.energy}")
-                st.write(f"⏱️ **Balance:** {st.session_state.balance}% Talk")
-                st.write(f"💬 **Fillers:** {st.session_state.fillers} detected")
+                st.markdown(f'<div class="insight-row"><span class="insight-icon">⏳</span><b>Speed:</b> {st.session_state.pace} BPM</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="insight-row"><span class="insight-icon">🔥</span><b>Energy:</b> {st.session_state.energy}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="insight-row"><span class="insight-icon">⏱️</span><b>Balance:</b> {st.session_state.balance}% Talk</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="insight-row"><span class="insight-icon">💬</span><b>Fillers:</b> {st.session_state.fillers} detected</div>', unsafe_allow_html=True)
                 st.markdown("---")
                 st.markdown("##### 🚀 Areas to Improve:")
                 for item in st.session_state.coach_data:
@@ -156,7 +157,7 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
         if st.session_state.get('ready'):
-            st.markdown('<div class="metric-card"><h4>WAVEFORM ANALYSIS</h4>', unsafe_allow_html=True)
+            st.markdown('<div class="metric-card"><h4 style="margin-bottom:20px;">WAVEFORM ANALYSIS</h4>', unsafe_allow_html=True)
             y_plot, sr_plot = librosa.load("speech.wav")
             fig, ax = plt.subplots(figsize=(10, 2), facecolor='#0D1117')
             librosa.display.waveshow(y_plot, sr=sr_plot, ax=ax, color='#FF00CC', alpha=0.8)
