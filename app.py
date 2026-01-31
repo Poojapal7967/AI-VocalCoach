@@ -18,7 +18,7 @@ try:
 except:
     st.error("Invalid API Key. Please update in the code.")
 
-# --- 1. STATE MANAGEMENT (Persists all data) ---
+# --- 1. STATE MANAGEMENT ---
 if 'page' not in st.session_state: st.session_state.page = 'home'
 if 'vocal_history' not in st.session_state: st.session_state.vocal_history = [] 
 
@@ -32,27 +32,39 @@ st.set_page_config(page_title="Speeko Elite", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #05070A; color: #FFFFFF; font-family: 'Inter', sans-serif; }
+    
+    /* Hero Section */
     .hero-box {
         background: radial-gradient(circle at 70% 30%, rgba(108, 92, 231, 0.15) 0%, rgba(5, 7, 10, 1) 70%);
-        padding: 60px 40px; border-radius: 30px; margin-bottom: 30px; text-align: center;
+        padding: 80px 40px; border-radius: 30px; margin-bottom: 50px; text-align: center;
     }
+    
+    /* Stylish Buttons */
     .stButton>button { 
         background: linear-gradient(90deg, #FF00CC, #3333FF); color: white; border-radius: 12px; 
         padding: 12px 30px; border: none; font-weight: 800; transition: 0.3s; width: 100%;
-        display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px;
+        display: flex; align-items: center; justify-content: center; gap: 8px; height: 50px;
     }
-    .delete-container button { background: linear-gradient(90deg, #FF4B4B, #FF0000) !important; }
+    .stButton>button:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(108, 92, 231, 0.3); }
+    
+    /* Cards & Layouts */
+    .feature-card {
+        background: rgba(255, 255, 255, 0.03); padding: 30px; border-radius: 20px; 
+        border: 1px solid rgba(255, 255, 255, 0.1); height: 100%; transition: 0.3s;
+    }
+    .feature-card:hover { background: rgba(255, 255, 255, 0.05); border-color: #6C5CE7; }
+    
     .metric-card { background: #0D1117; border-radius: 20px; padding: 25px; border: 1px solid #30363D; margin-bottom: 20px; }
     .feedback-box { background: rgba(108, 92, 231, 0.1); border-left: 5px solid #6C5CE7; padding: 15px; border-radius: 10px; margin-top: 10px; }
     
-    /* Alignment Fixes for Icons and Sidebar */
+    /* Sidebar Fixes */
     [data-testid="stSidebarNav"] span, .stRadio label { display: flex !important; align-items: center !important; gap: 10px !important; }
     .insight-row { display: flex; align-items: center; margin-bottom: 15px; font-size: 1.1rem; }
     .insight-icon { margin-right: 12px; width: 25px; text-align: center; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. CORE ANALYTICS & COACHING ENGINE ---
+# --- 4. CORE ANALYTICS ENGINE ---
 def get_vocal_analysis(file_path):
     y, sr = librosa.load(file_path)
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
@@ -68,8 +80,8 @@ def get_coaching_feedback(pace, fillers, balance, mode):
     feedback_list = []
     if pace > 165: feedback_list.append("🚀 **Slow Down:** Your pace is too fast. Use pauses to improve clarity.")
     elif pace < 100: feedback_list.append("⏳ **Speed Up:** You're a bit slow. Increase energy to keep the audience engaged.")
-    if fillers > 2: feedback_list.append(f"💬 **Reduce Fillers:** Detected {fillers} filler words. Try using silent pauses instead of 'um/ah'.")
-    if balance < 75: feedback_list.append("⏱️ **Flow:** Too many silent gaps. Try to maintain a more consistent stream of thought.")
+    if fillers > 2: feedback_list.append(f"💬 **Reduce Fillers:** Detected {fillers} filler words. Try using silent pauses.")
+    if balance < 75: feedback_list.append("⏱️ **Flow:** Too many silent gaps. Try to maintain a consistent stream of thought.")
     
     mode_tips = {
         "🎤 Public Speaking": "🌟 Stage Tip: Project your voice further for impact.",
@@ -82,15 +94,92 @@ def get_coaching_feedback(pace, fillers, balance, mode):
 
 # --- 5. NAVIGATION ENGINE ---
 if st.session_state.page == 'home':
-    st.markdown('<div class="hero-box"><h1 style="font-size:4rem; font-weight:900;">Speak <span style="color: #6C5CE7;"><</span>Confidently.</h1><p>Master Every Mode of Communication</p></div>', unsafe_allow_html=True)
-    if st.button("🚀 ENTER DASHBOARD"):
-        st.session_state.page = 'dashboard'
-        st.rerun()
-    f1, f2, f3 = st.columns(3)
-    for col, (i, t, d) in zip([f1, f2, f3], [("📊", "Metrics", "AI Analysis."), ("🧠", "AI Bot", "Practice scripts."), ("📈", "Progress", "Track growth.")]):
-        col.markdown(f'<div style="text-align:center; background:rgba(255,255,255,0.03); padding:20px; border-radius:20px;"><h1>{i}</h1><h3>{t}</h3><p>{d}</p></div>', unsafe_allow_html=True)
+    # --- HERO SECTION ---
+    st.markdown("""
+        <div class="hero-box">
+            <h1 style="font-size:4.5rem; font-weight:900; margin-bottom:10px;">
+                Speak <span style="color: #6C5CE7; text-shadow: 0 0 20px rgba(108,92,231,0.5);"><</span>Confidently.
+            </h1>
+            <p style="font-size:1.4rem; opacity:0.8;">The AI Vocal Coach for the Next Generation of Communicators.</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    c_btn1, c_btn2, c_btn3 = st.columns([1,1,1])
+    with c_btn2:
+        if st.button("🚀 LAUNCH DASHBOARD"):
+            st.session_state.page = 'dashboard'
+            st.rerun()
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    # --- KEY BENEFITS SECTION ---
+    st.markdown("## 💎 Premium Features")
+    b1, b2, b3 = st.columns(3)
+    benefits = [
+        ("📊", "Deep Analytics", "Track BPM, energy modulation, and talk-to-silence ratios with precision."),
+        ("🧠", "AI Coaching", "Get mode-specific feedback for interviews, teaching, or public speaking."),
+        ("📉", "Persistent Growth", "Visual history charts help you monitor your vocal evolution over time.")
+    ]
+    for col, (icon, title, desc) in zip([b1, b2, b3], benefits):
+        col.markdown(f"""
+            <div class="feature-card">
+                <h1>{icon}</h1>
+                <h3>{title}</h3>
+                <p style="opacity:0.7;">{desc}</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # --- HOW IT WORKS (Scroll Content) ---
+    st.markdown("## 🛠️ Your Path to Mastery")
+    s1, s2, s3 = st.columns(3)
+    steps = [
+        ("01", "Record", "Choose your practice mode and record your speech in high fidelity."),
+        ("02", "Analyze", "Our Whisper-powered AI dissects your pace, fillers, and clarity."),
+        ("03", "Improve", "Apply targeted feedback and repeat to conquer stage fright.")
+    ]
+    for col, (num, title, desc) in zip([s1, s2, s3], steps):
+        col.markdown(f"""
+            <div style="border-left: 2px solid #6C5CE7; padding-left: 20px;">
+                <h2 style="color: #6C5CE7; margin-bottom:0;">{num}</h2>
+                <h4>{title}</h4>
+                <p style="opacity:0.6;">{desc}</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    # --- SPECIALIZED MODES SHOWCASE ---
+    st.markdown("## 🎭 Tailored for Every Scenario")
+    m1, m2, m3, m4 = st.columns(4)
+    modes = [
+        ("🎤", "Public Speaking", "Master the stage"),
+        ("🎧", "Anchoring", "Crisp studio voice"),
+        ("💼", "Interview", "Rapport & Confidence"),
+        ("👨‍🏫", "Teaching", "Clarity & Pacing")
+    ]
+    for col, (icon, title, subtitle) in zip([m1, m2, m3, m4], modes):
+        col.markdown(f"""
+            <div style="text-align: center; background: rgba(108,92,231,0.05); padding: 20px; border-radius: 15px;">
+                <h1>{icon}</h1>
+                <h5 style="margin-bottom:0;">{title}</h5>
+                <small style="opacity:0.5;">{subtitle}</small>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # --- FOOTER ---
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("""
+        <div style="text-align: center; opacity: 0.3; padding: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <p>© 2026 Speeko Elite AI | Precision Communication Tool</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 else:
+    # --- DASHBOARD & OTHER PAGES (Same logic as current code) ---
     with st.sidebar:
         st.markdown("""<div style="background:linear-gradient(90deg, #FF00CC, #3333FF); padding:10px; border-radius:10px; text-align:center;"><h3 style="margin:0;">Speeko Elite</h3></div>""", unsafe_allow_html=True)
         if st.button("⬅️ HOME"):
